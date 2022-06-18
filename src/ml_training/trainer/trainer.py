@@ -1,4 +1,5 @@
 import pathlib
+from pyexpat import model
 from typing import Any, Callable, List, Optional, Tuple
 
 import numpy as np
@@ -213,7 +214,7 @@ class Trainer:
                         h.on_batch_begin(self, train_batch)
 
                     # call training step
-                    loss_list, result_list = train_step(train_batch)
+                    loss_list, result_list = train_step(train_batch, self._model)
 
                     for loss, optimizer in zip(loss_list, self.optimizer_list):
                         loss.backward()
@@ -248,7 +249,7 @@ class Trainer:
                             h.on_validation_batch_begin(self)
 
                         # call val_step
-                        val_loss_list, val_result_list = val_step()
+                        val_loss_list, val_result_list = val_step(val_batch, self._model)
 
                         # val loss caluculation
                         if self.loss_is_normalized:
