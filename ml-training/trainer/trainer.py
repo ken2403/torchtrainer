@@ -1,5 +1,5 @@
 import pathlib
-from typing import Callable, Union
+from typing import Any, Callable, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -15,17 +15,14 @@ class Trainer:
         model: nn.Module,
         n_epoch: int,
         device: torch.device,
-        loss_fn: Callable,
-        optimizer: torch.optim.Optimizer,
-        scheduler: Union[torch.optim.lr_scheduler._LRScheduler, None],
+        optimizer_list: List[torch.optim.Optimizer],
+        scheduler: Optional[torch.optim.lr_scheduler._LRScheduler],
         train_loader,
         val_loader,
-        regularization: bool = False,
-        reg_lambda: Union[float, None] = None,
         keep_n_checkpoints: int = 1,
         checkpoint_interval: int = 10,
         validation_interval: int = 1,
-        hooks: list = [],
+        hooks: List[Any] = [],
         best_label: str = "",
         loss_is_normalized: bool = True,
     ):
@@ -34,29 +31,23 @@ class Trainer:
         This contains an internal training loop which takes care of validation and can be
         extended with custom functionality using hooks.
 
-
         Args:
             model_path (pathlib.Path): path to the model directory.
             model (nn.Module): model to be trained.
             n_epoch (int): number of training epoch.
             device (torch.device): calculation device.
-            loss_fn (Callable): loss function which return loss value.
-            optimizer (torch.optim.Optimizer): training optimizer.
+            optimizer_list (List[torch.optim.Optimizer]): training optimizer.
             scheduer (torch.optim.lr_schduler._LRScheduler or None): training LR
                 scheduler.
             train_loader (torch.utils.data.Dataloader): data loader for training set.
             val_loader (torch.utirls.data.Dataloader): data loader for validation set.
-            regularization (bool, optinal): if True, add a regularization term
-                to the loss. Defaults to False.
-            reg_lambda (float or None): L1 regularization lambda.
-                Defaults to None
             keep_n_checkpoints (int, optional): number of saved checkpoints.
                 Defaults to 1.
             checkpoint_interval (int, optional): intervals after which
                 checkpoints is saved. Defaults to 10.
             validation_interval (int, optional):  intervals after which validation
                 calculation is saved. Defaults to 1.
-            hooks (list, optional): hooks to customize training process.
+            hooks (List[hook], optional): hooks to customize training process.
                 Defaults to [].
             best_labl (str, optional): best model's name label. Defaults to "".
             loss_is_normalized (bool, optional): if True, the loss per data point
@@ -73,13 +64,8 @@ class Trainer:
         # set training settings
         self.n_epoch = n_epoch
         self.device = device
-        self.loss_fn = loss_fn
-        self.optimizer = optimizer
+        self.optimizer_list = optimizer_list
         self.scheduler = scheduler
-        self.regularization = regularization
-        if self.regularization:
-            assert self.reg_lambda is not None, "Please set 'reg_lambda' parameter."
-        self.reg_lambda = reg_lambda
         self.keep_n_checkpoints = keep_n_checkpoints
         self.checkpoint_interval = checkpoint_interval
         self.validation_interval = validation_interval
@@ -108,10 +94,11 @@ class Trainer:
             self._model.load_state_dict(state_dict)
 
     def _optimizer_to(self, device):
-        for state in self.optimizer.state.values():
-            for k, v in state.items():
-                if torch.is_tensor(v):
-                    state[k] = v.to(device)
+        for optimizer in self.optimizer_list:
+            for state in self.optimizer.state.values():
+                for k, v in state.items():
+                    if torch.is_tensor(v):
+                        state[k] = v.to(device)
 
     @property
     def state_dict(self):
@@ -119,7 +106,7 @@ class Trainer:
             "epoch": self.epoch,
             "step": self.step,
             "best_loss": self.best_loss,
-            "optimizer": self.optimizer.state_dict(),
+            "optimizers": [optimizer.state_dict() for optimizer in self.optimizer_list],
             "scheduler": None if self.scheduler is None else self.scheduler.state_dict(),
             "hooks": [h.state_dict for h in self.hooks],
         }
@@ -134,15 +121,16 @@ class Trainer:
         self.epoch = state_dict["epoch"]
         self.step = state_dict["step"]
         self.best_loss = state_dict["best_loss"]
-        self.optimizer.load_state_dict(state_dict["optimizer"])
+        for op, s in zip(self.optimizer_list, state_dict["optimizers"]):
+            op.state_dict = s
         self.scheduler = (
             None
             if self.scheduler is None
             else self.scheduler.load_state_dict(state_dict["scheduler"])
         )
-        self._load_model_state_dict(state_dict["model"])
         for h, s in zip(self.hooks, state_dict["hooks"]):
             h.state_dict = s
+        self._load_model_state_dict(state_dict["model"])
 
     def store_checkpoint(self):
         # save Training object
@@ -172,13 +160,30 @@ class Trainer:
         chkpt = self.checkpoint_path.join(f"checkpoint-{str(epoch)}.pth.tar")
         self.state_dict = torch.load(chkpt)
 
-    def train(self):
+    def train(
+        self,
+        batch: int,
+        train_step: Callable[[Any], Tuple[List[torch.Tensor]]],
+        val_step: Optional[Callable[[Any], Tuple[List[torch.Tensor]]]] = None,
+    ):
         """
         Training the model.
+
+        Args:
+            batch (int): number of batch.
+            train_step (Callable): one training step which should include
+                pre-processing of the batch (ex: send the tensor to the device),
+                input to the model, and calculation of loss.
+                This function returns loss list and predicted value list.
+            val_step (Callbale or None): if None, using same step for training.
+                Defaults to None.
 
         Note:
             Depending on the `hooks`, training can stop earlier than `n_epoch`.
         """
+        if val_step is None:
+            val_step = train_step
+
         self._model.to(self.device)
         self._optimizer_to(self.device)
         self._stop = False
@@ -201,47 +206,27 @@ class Trainer:
 
                 # Training
                 self._model.train()
-                if self.device.type == "cuda":
-                    scaler = torch.cuda.amp.GradScaler()
-                for x_train, y_train in self.train_loader:
+                for train_batch in self.train_loader:
                     self.optimizer.zero_grad()
 
                     for h in self.hooks:
-                        h.on_batch_begin(self, x_train, y_train)
+                        h.on_batch_begin(self, train_batch)
 
-                    # move input to gpu, if needed
-                    x_train = x_train.to(self.device)
-                    y_train = y_train.to(self.device)
-                    with torch.cuda.amp.autocast():
-                        result = self._model(x_train)
-                        loss = self.loss_fn(result, y_train)
+                    # call training step
+                    loss_list, result_list = train_step(train_batch)
 
-                    # L1 regularization
-                    if self.regularization:
-                        l1_reg = torch.tensor(0.0, requires_grad=True)
-                        for param in self._model.parameters():
-                            if param.requires_grad:
-                                l1_reg = l1_reg + torch.norm(param, 1)
-                        loss = loss + self.reg_lambda * l1_reg
-
-                    if self.device.type == "cuda":
-                        # Calls backward() on scaled loss to create scaled gradients.
-                        scaler.scale(loss).backward()
-                        # scaler.step() first unscales the gradients of
-                        # the optimizer's assigned params.
-                        scaler.step(self.optimizer)
-                        # Updates the scale for next iteration.
-                        scaler.update()
-                        # after_model = copy.deepcopy(self._model)
-                    else:
+                    for loss, optimizer in zip(loss_list, self.optimizer_list):
                         loss.backward()
-                        self.optimizer.step()
+                        optimizer.step()
 
                     for h in self.hooks:
-                        h.on_batch_end(self, x_train, y_train, result, loss)
+                        h.on_batch_end(self, train_batch, result_list, loss_list)
 
                     if self._stop:
                         break
+
+                if self.scheduler is not None:
+                    self.scheduler.step()
 
                 if self.epoch % self.checkpoint_interval == 0:
                     self.store_checkpoint()
@@ -253,39 +238,50 @@ class Trainer:
                     for h in self.hooks:
                         h.on_validation_begin(self)
 
-                    val_loss = 0.0
+                    val_loss_sum_list = []
                     n_val = 0
-                    for x_val, y_val in self.val_loader:
+                    for val_batch in self.val_loader:
                         # append batch_size
-                        vsize = x_val.size(0)
-                        n_val += vsize
+                        n_val += batch
 
                         for h in self.hooks:
                             h.on_validation_batch_begin(self)
 
-                        # move input to gpu, if needed
-                        x_val = x_val.to(self.device)
-                        y_val = y_val.to(self.device)
+                        # call val_step
+                        val_loss_list, val_result_list = val_step()
 
-                        val_result = self._model(x_val)
-                        val_batch_loss = (
-                            self.loss_fn(val_result, y_val).data.cpu().numpy()
-                        )
+                        # val loss caluculation
                         if self.loss_is_normalized:
-                            val_loss += val_batch_loss * vsize
+                            if n_val == 0:
+                                for val_loss in val_loss_list:
+                                    val_loss_sum_list.append(val_loss * batch)
+                            else:
+                                for i, val_loss in enumerate(val_loss_list):
+                                    val_loss_sum_list[i] += val_loss * batch
                         else:
-                            val_loss += val_batch_loss
+                            if n_val == 0:
+                                for val_loss in val_loss_list:
+                                    val_loss_sum_list.append(val_loss)
+                            else:
+                                for i, val_loss in enumerate(val_loss_list):
+                                    val_loss_sum_list[i] += val_loss
 
                         for h in self.hooks:
                             h.on_validation_batch_end(
-                                self, x_val, y_val, val_result, val_loss
+                                self, val_batch, val_result_list, val_loss_list
                             )
 
                     # weighted average over batches
                     if self.loss_is_normalized:
-                        val_loss /= n_val
+                        for i, _ in enumerate(val_loss_sum_list):
+                            val_loss_sum_list[i] /= n_val
 
-                    if self.best_loss > val_loss:
+                    mean_val_loss = 0
+                    for val_loss_sum in val_loss_sum_list:
+                        mean_val_loss += val_loss_sum
+                    mean_val_loss /= len(val_loss_sum_list)
+
+                    if self.best_loss > mean_val_loss:
                         self.best_loss = val_loss
                         torch.save(self._model, self.best_model)
 
