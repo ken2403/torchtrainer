@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 import torch
 
 from ml_training.hooks import Hook
-from ml_training import Trainer
+from ml_training.trainer import Trainer
 
 __all__ = ["EarlyStopping", "NaNStopping"]
 

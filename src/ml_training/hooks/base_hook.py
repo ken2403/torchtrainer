@@ -2,7 +2,7 @@ from typing import Any, List, Dict
 
 import torch
 
-from ml_training import Trainer
+from ml_training.trainer import Trainer
 
 __all__ = ["Hook"]
 
