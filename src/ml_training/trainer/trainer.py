@@ -1,5 +1,4 @@
 import pathlib
-from pyexpat import model
 from typing import Any, Callable, List, Optional, Tuple
 
 import numpy as np
