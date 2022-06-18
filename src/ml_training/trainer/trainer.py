@@ -165,7 +165,7 @@ class Trainer:
         batch: int,
         train_step: Callable[[Any], Tuple[List[torch.Tensor]]],
         val_step: Optional[Callable[[Any], Tuple[List[torch.Tensor]]]] = None,
-    ):
+    ) -> torch.Tensor:
         """
         Training the model.
 
@@ -307,3 +307,5 @@ class Trainer:
                 h.on_train_failed(self)
 
             raise e
+
+        return self.best_loss
