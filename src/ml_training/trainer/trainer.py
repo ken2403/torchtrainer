@@ -210,7 +210,7 @@ class Trainer:
                     self.optimizer.zero_grad()
 
                     for h in self.hooks:
-                        h.on_batch_begin(self, train_batch)
+                        h.on_batch_begin(self)
 
                     # call training step
                     loss_list, result_list = train_step(train_batch, self._model)
@@ -219,8 +219,10 @@ class Trainer:
                         loss.backward()
                         optimizer.step()
 
+                    self.step += 1
+
                     for h in self.hooks:
-                        h.on_batch_end(self, train_batch, result_list, loss_list)
+                        h.on_batch_end(self, batch, train_batch, result_list, loss_list)
 
                     if self._stop:
                         break
@@ -268,7 +270,7 @@ class Trainer:
 
                         for h in self.hooks:
                             h.on_validation_batch_end(
-                                self, val_batch, val_result_list, val_loss_list
+                                self, batch, val_batch, val_result_list, val_loss_list
                             )
 
                     # weighted average over batches
@@ -282,11 +284,11 @@ class Trainer:
                     mean_val_loss /= len(val_loss_sum_list)
 
                     if self.best_loss > mean_val_loss:
-                        self.best_loss = val_loss
+                        self.best_loss = mean_val_loss
                         torch.save(self._model, self.best_model)
 
                     for h in self.hooks:
-                        h.on_validation_end(self, val_loss)
+                        h.on_validation_end(self, mean_val_loss)
 
                 for h in self.hooks:
                     h.on_epoch_end(self)
