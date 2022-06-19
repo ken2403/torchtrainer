@@ -80,11 +80,11 @@ class NaNStopping(Hook):
 
     @property
     def state_dict(self):
-        return {"loss_order": self.i}
+        return {"nan_loss_order": self.i}
 
     @state_dict.setter
     def state_dict(self, state_dict: Dict[str, Any]):
-        self.i = state_dict["i"]
+        self.i = state_dict["nan_loss_order"]
 
     def on_batch_end(
         self,
