@@ -1,3 +1,4 @@
+import os
 import pathlib
 from typing import Any, Callable, List, Optional, Tuple
 
@@ -78,7 +79,7 @@ class Trainer:
         if self.checkpoint_path.exists():
             self.restore_checkpoint()
         else:
-            self.checkpoint_path.mkdir()
+            os.mkdir(str(self.checkpoint_path))
             self.epoch = 0
             self.step = 0
             self.best_loss = float("inf")
@@ -214,7 +215,8 @@ class Trainer:
                 # Training
                 self._model.train()
                 for train_batch in self.train_loader:
-                    self.optimizer.zero_grad()
+                    for optimizer in self.optimizer_list:
+                        optimizer.zero_grad()
 
                     for h in self.hooks:
                         h.on_batch_begin(self)
