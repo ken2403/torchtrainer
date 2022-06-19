@@ -231,10 +231,10 @@ class Trainer:
                     # train loss accumulation
                     if n_train == batch:
                         for tr_loss in loss_list:
-                            train_loss_sum_list.append(tr_loss)
+                            train_loss_sum_list.append(tr_loss.detach().clone().cpu())
                     else:
                         for i, tr_loss in enumerate(loss_list):
-                            train_loss_sum_list[i] += tr_loss
+                            train_loss_sum_list[i] += tr_loss.detach().clone().cpu()
 
                     for loss, optimizer in zip(loss_list, self.optimizer_list):
                         loss.backward()
@@ -286,10 +286,10 @@ class Trainer:
                         # val loss accumulation
                         if n_val == batch:
                             for val_loss in val_loss_list:
-                                val_loss_sum_list.append(val_loss)
+                                val_loss_sum_list.append(val_loss.detach().clone().cpu())
                         else:
                             for i, val_loss in enumerate(val_loss_list):
-                                val_loss_sum_list[i] += val_loss
+                                val_loss_sum_list[i] += val_loss.detach().clone().cpu()
 
                         for h in self.hooks:
                             h.on_validation_batch_end(
