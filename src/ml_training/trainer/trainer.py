@@ -75,7 +75,7 @@ class Trainer:
         self._model = model
         self._stop = False
         # get newest checkpoint
-        if self.checkpoint_path.exits():
+        if self.checkpoint_path.exists():
             self.restore_checkpoint()
         else:
             self.checkpoint_path.mkdir()
