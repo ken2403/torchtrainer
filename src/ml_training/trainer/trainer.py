@@ -56,8 +56,8 @@ class Trainer:
         """
         # set path
         self.model_path = model_path
-        self.checkpoint_path = self.model_path.join("checkpoints")
-        self.best_model = self.model_path.join(f"best_model_{best_label}")
+        self.checkpoint_path = self.model_path.joinpath("checkpoints")
+        self.best_model = self.model_path.joinpath(f"best_model_{best_label}")
         # set dataset
         self.train_loader = train_loader
         self.val_loader = val_loader
@@ -134,7 +134,7 @@ class Trainer:
 
     def store_checkpoint(self):
         # save Training object
-        chkpt = self.checkpoint_path.join(f"checkpoint-{self.epoch}.pth.tar")
+        chkpt = self.checkpoint_path.joinpath(f"checkpoint-{self.epoch}.pth.tar")
         torch.save(self.state_dict, chkpt)
         # remove old chechpoint
         chpts = [
@@ -144,7 +144,7 @@ class Trainer:
             chpt_epochs = [int(f.split(".")[0].split("-")[-1]) for f in chpts]
             sidx = np.argsort(chpt_epochs)
             for i in sidx[: -self.keep_n_checkpoints]:
-                self.checkpoint_path.join(chpts[i]).unlink()
+                self.checkpoint_path.joinpath(chpts[i]).unlink()
 
     def restore_checkpoint(self, epoch=None):
         # get newest checkpoint
@@ -157,7 +157,7 @@ class Trainer:
                 ]
             )
         # load exist newest checkpoint
-        chkpt = self.checkpoint_path.join(f"checkpoint-{str(epoch)}.pth.tar")
+        chkpt = self.checkpoint_path.joinpath(f"checkpoint-{str(epoch)}.pth.tar")
         self.state_dict = torch.load(chkpt)
 
     def train(
