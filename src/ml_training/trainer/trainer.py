@@ -212,8 +212,13 @@ class Trainer:
                     break
 
                 # Training
+                train_loss_sum_list = []
+                n_train = 0
                 self._model.train()
                 for train_batch in self.train_loader:
+                    # accumulate the number of data
+                    n_train += batch
+
                     for optimizer in self.optimizer_list:
                         optimizer.zero_grad()
 
@@ -222,6 +227,14 @@ class Trainer:
 
                     # call training step
                     loss_list, result_list = train_step(train_batch, self._model)
+
+                    # train loss accumulation
+                    if n_train == batch:
+                        for tr_loss in loss_list:
+                            train_loss_sum_list.append(tr_loss)
+                    else:
+                        for i, tr_loss in enumerate(loss_list):
+                            train_loss_sum_list[i] += tr_loss
 
                     for loss, optimizer in zip(loss_list, self.optimizer_list):
                         loss.backward()
@@ -238,12 +251,17 @@ class Trainer:
                 if self.scheduler is not None:
                     self.scheduler.step()
 
+                # weighted average over batches
+                if self.loss_is_normalized:
+                    for i, _ in enumerate(train_loss_sum_list):
+                        train_loss_sum_list[i] /= n_train
+
                 if self.epoch % self.checkpoint_interval == 0:
                     self.store_checkpoint()
 
                 if verbose:
                     print("Training loss:")
-                    for i, loss in enumerate(loss_list):
+                    for i, loss in enumerate(train_loss_sum_list):
                         print(f"\t {i}: {loss:.3f}")
 
                 # Validation
@@ -265,21 +283,13 @@ class Trainer:
                         # call val_step
                         val_loss_list, val_result_list = val_step(val_batch, self._model)
 
-                        # val loss caluculation
-                        if self.loss_is_normalized:
-                            if n_val == batch:
-                                for val_loss in val_loss_list:
-                                    val_loss_sum_list.append(val_loss * batch)
-                            else:
-                                for i, val_loss in enumerate(val_loss_list):
-                                    val_loss_sum_list[i] += val_loss * batch
+                        # val loss accumulation
+                        if n_val == batch:
+                            for val_loss in val_loss_list:
+                                val_loss_sum_list.append(val_loss)
                         else:
-                            if n_val == batch:
-                                for val_loss in val_loss_list:
-                                    val_loss_sum_list.append(val_loss)
-                            else:
-                                for i, val_loss in enumerate(val_loss_list):
-                                    val_loss_sum_list[i] += val_loss
+                            for i, val_loss in enumerate(val_loss_list):
+                                val_loss_sum_list[i] += val_loss
 
                         for h in self.hooks:
                             h.on_validation_batch_end(
