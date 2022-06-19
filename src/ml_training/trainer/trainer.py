@@ -1,4 +1,3 @@
-import os
 import pathlib
 from typing import Any, Callable, List, Optional, Tuple
 
@@ -79,7 +78,7 @@ class Trainer:
         if self.checkpoint_path.exists():
             self.restore_checkpoint()
         else:
-            os.mkdir(str(self.checkpoint_path))
+            self.checkpoint_path.mkdir()
             self.epoch = 0
             self.step = 0
             self.best_loss = float("inf")
@@ -151,6 +150,12 @@ class Trainer:
         # get newest checkpoint
         print(self.checkpoint_path)
         if epoch is None:
+            f = [
+                f
+                for f in self.checkpoint_path.iterdir()
+                if str(f).startswith("checkpoint")
+            ]
+            print(f)
             epoch = max(
                 [
                     int(str(f).split(".")[0].split("-")[-1])
