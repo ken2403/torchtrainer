@@ -39,7 +39,7 @@ class Trainer:
             train_loader (torch.utils.data.Dataloader): data loader for training set.
             val_loader (torch.utirls.data.Dataloader): data loader for validation set
             optimizer_list (List[torch.optim.Optimizer]): training optimizer.
-            scheduer (torch.optim.lr_schduler._LRScheduler or None): training LR
+            scheduer (torch.optim.lr_schduler._LRScheduler, optional): training LR
                 scheduler. Defaults to None.
             keep_n_checkpoints (int, optional): number of saved checkpoints.
                 Defaults to 1.
