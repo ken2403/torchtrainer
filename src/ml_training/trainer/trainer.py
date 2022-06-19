@@ -148,19 +148,12 @@ class Trainer:
 
     def restore_checkpoint(self, epoch=None):
         # get newest checkpoint
-        print(self.checkpoint_path)
         if epoch is None:
-            f = [
-                f
-                for f in self.checkpoint_path.iterdir()
-                if str(f).startswith("checkpoint")
-            ]
-            print(f)
             epoch = max(
                 [
                     int(str(f).split(".")[0].split("-")[-1])
                     for f in self.checkpoint_path.iterdir()
-                    if str(f).startswith("checkpoint")
+                    if str(f.name).startswith("checkpoint")
                 ]
             )
         # load exist newest checkpoint
