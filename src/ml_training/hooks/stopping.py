@@ -4,7 +4,7 @@ import torch
 from ml_training.hooks import Hook
 from ml_training.trainer import Trainer
 
-__all__ = ["EarlyStopping", "NaNStopping"]
+__all__ = ["EarlyStopping", "MaxStepStopping", "NaNStopping"]
 
 
 class EarlyStopping(Hook):
@@ -27,6 +27,7 @@ class EarlyStopping(Hook):
         self.counter = 0
         self.threshold_ratio = threshold_ratio
         self.patience = patience
+        self._name = "EarlyStopping"
 
     @property
     def state_dict(self):
@@ -46,6 +47,7 @@ class EarlyStopping(Hook):
 
         if self.counter > self.patience:
             trainer._stop = True
+            trainer._stop_by = self._name
 
 
 class MaxStepStopping(Hook):
@@ -60,31 +62,30 @@ class MaxStepStopping(Hook):
             max_steps (int): maximum number of steps.
         """
         self.max_steps = max_steps
+        self._name = "MaxStepStopping"
 
     def on_batch_begin(self, trainer: Trainer):
         # stop training if max_steps is reached
         if trainer.step > self.max_steps:
             trainer._stop = True
-
-
-class NaNStopError(Exception):
-    pass
+            trainer._stop_by = self._name
 
 
 class NaNStopping(Hook):
     def __init__(self) -> None:
         """
-        Hook to stop training when traing loss is None.
+        Hook to stop training when traing loss is NaN.
         """
-        self.i = None
+        self.nan_loss_order = None
+        self._name = "NaNStopping"
 
     @property
     def state_dict(self):
-        return {"nan_loss_order": self.i}
+        return {"nan_loss_order": self.nan_loss_order}
 
     @state_dict.setter
     def state_dict(self, state_dict: Dict[str, Any]):
-        self.i = state_dict["nan_loss_order"]
+        self.nan_loss_order = state_dict["nan_loss_order"]
 
     def on_batch_end(
         self,
@@ -96,8 +97,6 @@ class NaNStopping(Hook):
     ):
         for i, loss in enumerate(loss_list):
             if loss.isnan().any():
-                self.i = i
+                self.nan_loss_order = i
                 trainer._stop = True
-                raise NaNStopError(
-                    f"The {i}th value of training loss has become nan! Stop training."
-                )
+                trainer._stop_by = self._name

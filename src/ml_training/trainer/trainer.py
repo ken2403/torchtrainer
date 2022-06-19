@@ -74,6 +74,7 @@ class Trainer:
         # private attribute
         self._model = model
         self._stop = False
+        self._stop_by = None
         # get newest checkpoint
         if self.checkpoint_path.exists():
             self.restore_checkpoint()
@@ -325,6 +326,7 @@ class Trainer:
             if verbose:
                 print("-" * 50)
                 if self._stop:
+                    print(f"Training is stopped by {self._stop_by}.")
                     print(f"Training stopped with epoch {epoch+1}")
                 else:
                     print(f"Training completed with epoch {epoch+1}")
