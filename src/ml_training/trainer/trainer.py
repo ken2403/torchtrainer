@@ -106,7 +106,7 @@ class Trainer:
             "epoch": self.epoch,
             "step": self.step,
             "best_loss": self.best_loss,
-            "optimizers": [optimizer.state_dict() for optimizer in self.optimizer_list],
+            "optimizers": [optimizer.state_dict for optimizer in self.optimizer_list],
             "scheduler": None if self.scheduler is None else self.scheduler.state_dict(),
             "hooks": [h.state_dict for h in self.hooks],
         }
