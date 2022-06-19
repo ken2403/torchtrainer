@@ -200,7 +200,7 @@ class Trainer:
                 self.epoch += 1
 
                 if verbose:
-                    print(f"epoch {epoch} start")
+                    print(f"epoch {epoch+1} start")
 
                 for h in self.hooks:
                     h.on_epoch_begin(self)
@@ -311,23 +311,22 @@ class Trainer:
                     h.on_epoch_end(self)
 
                 if verbose:
-                    print("-" * 30)
+                    print("-" * 50)
                     print("")
 
                 if self._stop:
-                    if verbose:
-                        print("-" * 30)
-                        print(f"trainign end with epoch {epoch+1}")
-                        print("-" * 30)
                     break
 
             for h in self.hooks:
                 h.on_train_ends(self)
 
             if verbose:
-                print("-" * 30)
-                print(f"training complete with epoch {epoch+1}")
-                print("-" * 30)
+                print("-" * 50)
+                if self._stop:
+                    print(f"training stoped with epoch {epoch+1}")
+                else:
+                    print(f"training complete with epoch {epoch+1}")
+                print("-" * 50)
 
             # store checkpoints
             self.store_checkpoint()
