@@ -148,6 +148,7 @@ class Trainer:
 
     def restore_checkpoint(self, epoch=None):
         # get newest checkpoint
+        print(self.checkpoint_path)
         if epoch is None:
             epoch = max(
                 [
@@ -157,7 +158,7 @@ class Trainer:
                 ]
             )
         # load exist newest checkpoint
-        chkpt = self.checkpoint_path.joinpath(f"checkpoint-{str(epoch)}.pth.tar")
+        chkpt = self.checkpoint_path.joinpath(f"checkpoint-{epoch}.pth.tar")
         self.state_dict = torch.load(chkpt)
 
     def train(
