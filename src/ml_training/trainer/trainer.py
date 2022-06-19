@@ -165,6 +165,7 @@ class Trainer:
         batch: int,
         train_step: Callable[[Any], Tuple[List[torch.Tensor]]],
         val_step: Optional[Callable[[Any], Tuple[List[torch.Tensor]]]] = None,
+        verbose: bool = False,
     ) -> torch.Tensor:
         """
         Training the model.
@@ -177,6 +178,8 @@ class Trainer:
                 This function returns loss list and predicted value list.
             val_step (Callbale or None): if None, using same step for training.
                 Defaults to None.
+            verbose (bool): verbosity of showing result of training step.
+                Defaults to False.
 
         Note:
             Depending on the `hooks`, training can stop earlier than `n_epoch`.
@@ -192,9 +195,12 @@ class Trainer:
             h.on_train_begin(self)
 
         try:
-            for _ in range(self.n_epoch):
+            for epoch in range(self.n_epoch):
                 # count the current epoch
                 self.epoch += 1
+
+                if verbose:
+                    print(f"epoch {epoch} start")
 
                 for h in self.hooks:
                     h.on_epoch_begin(self)
@@ -233,6 +239,10 @@ class Trainer:
                 if self.epoch % self.checkpoint_interval == 0:
                     self.store_checkpoint()
 
+                if verbose:
+                    for i, loss in enumerate(loss_list):
+                        print(f"{i}th training loss {loss}")
+
                 # Validation
                 self._model.eval()
                 if self.epoch % self.validation_interval == 0 or self._stop:
@@ -254,14 +264,14 @@ class Trainer:
 
                         # val loss caluculation
                         if self.loss_is_normalized:
-                            if n_val == 0:
+                            if n_val == batch:
                                 for val_loss in val_loss_list:
                                     val_loss_sum_list.append(val_loss * batch)
                             else:
                                 for i, val_loss in enumerate(val_loss_list):
                                     val_loss_sum_list[i] += val_loss * batch
                         else:
-                            if n_val == 0:
+                            if n_val == batch:
                                 for val_loss in val_loss_list:
                                     val_loss_sum_list.append(val_loss)
                             else:
@@ -278,6 +288,10 @@ class Trainer:
                         for i, _ in enumerate(val_loss_sum_list):
                             val_loss_sum_list[i] /= n_val
 
+                    if verbose:
+                        for i, loss in enumerate(val_loss_sum_list):
+                            print(f"{i}th validation loss {loss}")
+
                     mean_val_loss = 0
                     for val_loss_sum in val_loss_sum_list:
                         mean_val_loss += val_loss_sum
@@ -286,6 +300,8 @@ class Trainer:
                     if self.best_loss > mean_val_loss:
                         self.best_loss = mean_val_loss
                         torch.save(self._model, self.best_model)
+                        if verbose:
+                            print(f"model is saved in epoch {epoch+1}")
 
                     for h in self.hooks:
                         h.on_validation_end(self, mean_val_loss)
@@ -293,11 +309,24 @@ class Trainer:
                 for h in self.hooks:
                     h.on_epoch_end(self)
 
+                if verbose:
+                    print("-" * 30)
+                    print("")
+
                 if self._stop:
+                    if verbose:
+                        print("-" * 30)
+                        print(f"trainign end with epoch {epoch+1}")
+                        print("-" * 30)
                     break
 
             for h in self.hooks:
                 h.on_train_ends(self)
+
+            if verbose:
+                print("-" * 30)
+                print(f"training complete with epoch {epoch+1}")
+                print("-" * 30)
 
             # store checkpoints
             self.store_checkpoint()
