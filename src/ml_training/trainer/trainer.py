@@ -15,10 +15,10 @@ class Trainer:
         model: nn.Module,
         n_epoch: int,
         device: torch.device,
-        optimizer_list: List[torch.optim.Optimizer],
-        scheduler: Optional[torch.optim.lr_scheduler._LRScheduler],
         train_loader,
         val_loader,
+        optimizer_list: List[torch.optim.Optimizer],
+        scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
         keep_n_checkpoints: int = 1,
         checkpoint_interval: int = 10,
         validation_interval: int = 1,
@@ -36,11 +36,11 @@ class Trainer:
             model (nn.Module): model to be trained.
             n_epoch (int): number of training epoch.
             device (torch.device): calculation device.
+            train_loader (torch.utils.data.Dataloader): data loader for training set.
+            val_loader (torch.utirls.data.Dataloader): data loader for validation set
             optimizer_list (List[torch.optim.Optimizer]): training optimizer.
             scheduer (torch.optim.lr_schduler._LRScheduler or None): training LR
-                scheduler.
-            train_loader (torch.utils.data.Dataloader): data loader for training set.
-            val_loader (torch.utirls.data.Dataloader): data loader for validation set.
+                scheduler. Defaults to None.
             keep_n_checkpoints (int, optional): number of saved checkpoints.
                 Defaults to 1.
             checkpoint_interval (int, optional): intervals after which
