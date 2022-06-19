@@ -138,7 +138,7 @@ class Trainer:
         torch.save(self.state_dict, chkpt)
         # remove old chechpoint
         chpts = [
-            f for f in self.checkpoint_path.iterdir() if str(f).endswith(".pth.tar")
+            str(f) for f in self.checkpoint_path.iterdir() if str(f).endswith(".pth.tar")
         ]
         if len(chpts) > self.keep_n_checkpoints:
             chpt_epochs = [int(f.split(".")[0].split("-")[-1]) for f in chpts]
