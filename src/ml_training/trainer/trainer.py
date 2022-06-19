@@ -151,7 +151,7 @@ class Trainer:
         if epoch is None:
             epoch = max(
                 [
-                    int(f.split(".")[0].split("-")[-1])
+                    int(str(f).split(".")[0].split("-")[-1])
                     for f in self.checkpoint_path.iterdir()
                     if str(f).startswith("checkpoint")
                 ]
