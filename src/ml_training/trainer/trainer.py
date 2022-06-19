@@ -241,8 +241,9 @@ class Trainer:
                     self.store_checkpoint()
 
                 if verbose:
+                    print("Training loss:")
                     for i, loss in enumerate(loss_list):
-                        print(f"{i}th training loss {loss}")
+                        print(f"\t {i}: {loss:.3f}")
 
                 # Validation
                 self._model.eval()
@@ -290,8 +291,9 @@ class Trainer:
                             val_loss_sum_list[i] /= n_val
 
                     if verbose:
+                        print("validation loss:")
                         for i, loss in enumerate(val_loss_sum_list):
-                            print(f"{i}th validation loss {loss}")
+                            print(f"\t {i}: {loss:.3f}")
 
                     mean_val_loss = 0
                     for val_loss_sum in val_loss_sum_list:
@@ -323,9 +325,9 @@ class Trainer:
             if verbose:
                 print("-" * 50)
                 if self._stop:
-                    print(f"training stoped with epoch {epoch+1}")
+                    print(f"Training stopped with epoch {epoch+1}")
                 else:
-                    print(f"training complete with epoch {epoch+1}")
+                    print(f"Training completed with epoch {epoch+1}")
                 print("-" * 50)
 
             # store checkpoints
