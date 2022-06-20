@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ..hooks.base_hook import Hook
+import ml_training
 
 __all__ = ["Trainer"]
 
@@ -24,7 +24,7 @@ class Trainer:
         keep_n_checkpoints: int = 1,
         checkpoint_interval: int = 10,
         validation_interval: int = 1,
-        hooks: List[Hook] = [],
+        hooks: List[ml_training.hooks.Hook] = [],
         best_label: str = "",
         loss_is_normalized: bool = True,
     ):
@@ -49,7 +49,7 @@ class Trainer:
                 checkpoints is saved. Defaults to 10.
             validation_interval (int, optional):  intervals after which validation
                 calculation is saved. Defaults to 1.
-            hooks (List[hook], optional): hooks to customize training process.
+            hooks (List[Hook], optional): hooks to customize training process.
                 Defaults to [].
             best_labl (str, optional): best model's name label. Defaults to "".
             loss_is_normalized (bool, optional): if True, the loss per data point
