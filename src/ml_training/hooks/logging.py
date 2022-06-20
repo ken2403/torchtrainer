@@ -5,8 +5,8 @@ from typing import Callable, List, Any
 
 import torch
 
-from ml_training.hooks import Hook
-from ml_training.trainer.trainer import Trainer
+from ..hooks import Hook
+from ..trainer.trainer import Trainer
 
 __all__ = ["LoggingHook", "CSVHook"]
 

@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ml_training.hooks.base_hook import Hook
+from ..hooks.base_hook import Hook
 
 __all__ = ["Trainer"]
 
