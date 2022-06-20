@@ -58,6 +58,8 @@ class LoggingHook(Hook):
             self._val_counter = 0
         else:
             self._val_loss_list = None
+        if len(self.metrics) != 0:
+            self._metrics_results = []
 
     def on_batch_end(
         self,
@@ -207,16 +209,18 @@ class CSVHook(LoggingHook):
 
             if self.log_train_loss:
                 for i in range(self.n_loss):
-                    log += "," + str(self._train_loss_list[i] / self._train_counter)
+                    log += "," + str(
+                        float(self._train_loss_list[i] / self._train_counter)
+                    )
 
             if self.log_validation_loss:
                 for i in range(self.n_loss):
-                    log += "," + str(self._val_loss_list[i] / self._val_counter)
+                    log += "," + str(float(self._val_loss_list[i] / self._val_counter))
 
             for i, result in enumerate(self._metrics_results):
                 for j in range(self.n_loss):
                     m = result[j] / self._val_counter
-                    log += "," + str(m)
+                    log += "," + str(float(m))
 
             with open(self.log_path, "a") as f:
                 f.write(log + os.linesep)
