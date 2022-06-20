@@ -72,7 +72,7 @@ class LoggingHook(Hook):
                 if self._train_counter == 0:
                     self._train_loss_list.append(loss.detach().clone().cpu().data)
                 else:
-                    self._train_loss_list[i] += float(loss.detach().clone().cpu().data)
+                    self._train_loss_list[i] += loss.detach().clone().cpu().data
             self._train_counter += n_batch
 
     def on_validation_batch_end(
@@ -88,22 +88,21 @@ class LoggingHook(Hook):
                 if self._val_counter == 0:
                     self._val_loss_list.append(loss.detach().clone().cpu().data)
                 else:
-                    self._val_loss_list[i] += float(
-                        loss.data.detach().clone().cpu().data
-                    )
+                    self._val_loss_list[i] += loss.data.detach().clone().cpu().data
             self._val_counter += n_batch
+
         if len(self.metrics) == 0:
             pass
         if len(self._metrics_results) == 0:
             for metric in self.metrics:
                 m_list = metric(val_batch, result_list)
-                m_list = [m.detach().clone().cpu() for m in m_list]
+                m_list = [m.detach().clone().cpu().data for m in m_list]
                 self._metrics_results.append(m_list)
         else:
             for i, metric in enumerate(self.metrics):
                 m_list = metric(val_batch, result_list)
                 for j, m in enumerate(m_list):
-                    self._metrics_results[i][j] += m.detach().clone().cpu()
+                    self._metrics_results[i][j] += m.detach().clone().cpu().data
 
 
 class CSVHook(LoggingHook):
@@ -216,7 +215,7 @@ class CSVHook(LoggingHook):
 
             for i, result in enumerate(self._metrics_results):
                 for j in range(self.n_loss):
-                    m = result[j].detach().clone().cpu() / self._val_counter
+                    m = result[j] / self._val_counter
                     log += "," + str(m)
 
             with open(self.log_path, "a") as f:
