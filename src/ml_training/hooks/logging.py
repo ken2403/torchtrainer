@@ -15,7 +15,7 @@ class LoggingHook(Hook):
     def __init__(
         self,
         log_path: pathlib.Path,
-        metrics: List[Callable[[Any], torch.Tensor]],
+        metrics: List[Callable[[Any], List[torch.Tensor]]],
         log_train_loss: bool = True,
         log_validation_loss: bool = True,
         log_learning_rate: bool = True,
@@ -26,7 +26,7 @@ class LoggingHook(Hook):
         Args:
             log_path (pathlib.Path): path to directory in which log files will be stored.
             metrics (List): metrics to log; each metric has to be a function which gets
-                one train_loader and returns torch.Tensor.
+                one train_loader and returns list of torch.Tensor.
             log_train_loss (bool, optional): enable logging of training loss.
                 Defaults to True.
             log_validation_loss (bool, optional): enable logging of validation loss.
@@ -94,14 +94,16 @@ class LoggingHook(Hook):
             self._val_counter += n_batch
         if len(self.metrics) == 0:
             pass
-        if len(self._metrics_result) == 0:
+        if len(self._metrics_results) == 0:
             for metric in self.metrics:
-                m = metric(val_batch, result_list)
-                self._metrics_results.append(m)
+                m_list = metric(val_batch, result_list)
+                m_list = [m.detach().clone().cpu() for m in m_list]
+                self._metrics_results.append(m_list)
         else:
             for i, metric in enumerate(self.metrics):
-                m = metric(val_batch, result_list)
-                self._metrics_results[i] += m
+                m_list = metric(val_batch, result_list)
+                for j, m in enumerate(m_list):
+                    self._metrics_results[i][j] += m.detach().clone().cpu()
 
 
 class CSVHook(LoggingHook):
@@ -174,23 +176,19 @@ class CSVHook(LoggingHook):
 
             if self.log_learning_rate:
                 for i in range(self.n_loss):
-                    log += f",Learning rate {i+1}"
+                    log += f",LearningRate_{i+1}"
 
             if self.log_train_loss:
                 for i in range(self.n_loss):
-                    log += f",Train loss {i+1}"
+                    log += f",TrainLoss_{i+1}"
 
             if self.log_validation_loss:
                 for i in range(self.n_loss):
-                    log += f",Validation loss {i+1}"
-
-            if len(self.metrics) > 0:
-                log += ","
+                    log += f",ValidationLoss_{i+1}"
 
             for i, _ in enumerate(self.metrics):
-                log += self.metrics_names[i]
-                if i < len(self.metrics) - 1:
-                    log += ","
+                for j in range(self.n_loss):
+                    log += f",{self.metrics_names[i]}_{j+1}"
 
             with open(self.log_path, "a+") as f:
                 f.write(log + os.linesep)
@@ -216,14 +214,10 @@ class CSVHook(LoggingHook):
                 for i in range(self.n_loss):
                     log += "," + str(self._val_loss_list[i] / self._val_counter)
 
-            if len(self.metrics) > 0:
-                log += ","
-
             for i, result in enumerate(self._metrics_results):
-                m = result.detac().clone().cpu() / self._val_counter
-                log += str(m)
-                if i < len(self.metrics) - 1:
-                    log += ","
+                for j in range(self.n_loss):
+                    m = result[j].detach().clone().cpu() / self._val_counter
+                    log += "," + str(m)
 
             with open(self.log_path, "a") as f:
                 f.write(log + os.linesep)
