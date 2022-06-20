@@ -5,6 +5,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from ml_training.hooks.base_hook import Hook
+
 __all__ = ["Trainer"]
 
 
@@ -22,7 +24,7 @@ class Trainer:
         keep_n_checkpoints: int = 1,
         checkpoint_interval: int = 10,
         validation_interval: int = 1,
-        hooks: List[Any] = [],
+        hooks: List[Hook] = [],
         best_label: str = "",
         loss_is_normalized: bool = True,
     ):

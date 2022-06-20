@@ -69,7 +69,10 @@ class LoggingHook(Hook):
     ):
         if self.log_train_loss:
             for i, loss in enumerate(loss_list):
-                self._train_loss_list[i] += float(loss.data) * n_batch
+                if self._train_counter == 0:
+                    self._train_loss_list.append(loss.detach().clone().cpu().data)
+                else:
+                    self._train_loss_list[i] += float(loss.detach().clone().cpu().data)
             self._train_counter += n_batch
 
     def on_validation_batch_end(
@@ -82,7 +85,12 @@ class LoggingHook(Hook):
     ):
         if self.log_validation_loss:
             for i, loss in enumerate(loss_list):
-                self._val_loss_list[i] += float(loss.data) * n_batch
+                if self._val_counter == 0:
+                    self._val_loss_list.append(loss.detach().clone().cpu().data)
+                else:
+                    self._val_loss_list[i] += float(
+                        loss.data.detach().clone().cpu().data
+                    )
             self._val_counter += n_batch
         if len(self.metrics) == 0:
             pass
@@ -93,7 +101,7 @@ class LoggingHook(Hook):
         else:
             for i, metric in enumerate(self.metrics):
                 m = metric(val_batch, result_list)
-                self._metrics_results[i] += i
+                self._metrics_results[i] += m
 
 
 class CSVHook(LoggingHook):
@@ -126,7 +134,7 @@ class CSVHook(LoggingHook):
                 Defaults to 1.
             n_loss (int, optional): number of log loss data. Defaults to 1.
         """
-        log_path = log_path.join("log.csv")
+        log_path = log_path.joinpath("log.csv")
         super().__init__(
             log_path, metrics, log_train_loss, log_validation_loss, log_learning_rate
         )
@@ -212,7 +220,7 @@ class CSVHook(LoggingHook):
                 log += ","
 
             for i, result in enumerate(self._metrics_results):
-                m = result / self._val_counter
+                m = result.detac().clone().cpu() / self._val_counter
                 log += str(m)
                 if i < len(self.metrics) - 1:
                     log += ","
