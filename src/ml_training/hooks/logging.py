@@ -111,8 +111,8 @@ class CSVHook(LoggingHook):
     def __init__(
         self,
         log_path: pathlib.Path,
-        metrics: List[Callable[[Any], torch.Tensor]],
-        metrics_names: List[str],
+        metrics: List[Callable[[Any], torch.Tensor]] = [],
+        metrics_names: List[str] = [],
         log_train_loss: bool = True,
         log_validation_loss: bool = True,
         log_learning_rate: bool = True,
@@ -124,9 +124,9 @@ class CSVHook(LoggingHook):
 
         Args:
             log_path (pathlib.Path): path to directory in which log files will be stored.
-            metrics (List): metrics to log; each metric has to be a function which gets
-                one train_loader and returns torch.Tensor.
-            metrics_names (List): list of metrics name.
+            metrics (List, optional): metrics to log; each metric has to be a function
+                which gets one train_loader and returns torch.Tensor.
+            metrics_names (List, optional): list of metrics name.
             log_train_loss (bool, optional): enable logging of training loss.
                 Defaults to True.
             log_validation_loss (bool, optional): enable logging of validation loss.
@@ -141,7 +141,10 @@ class CSVHook(LoggingHook):
         super().__init__(
             log_path, metrics, log_train_loss, log_validation_loss, log_learning_rate
         )
-
+        if len(metrics) != 0:
+            assert (
+                len(metrics_names) != 0
+            ), "Please set metrics names like '[MAE, RMSE]'."
         self._offset = 0
         self._restart = False
         self.metrics_names = metrics_names
