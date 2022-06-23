@@ -1,2 +1,3 @@
-# ml-training
-Module to ease the training process of machine learning
+# TorchTrainer
+
+Simplify the learning process of PyTorch-based models.
