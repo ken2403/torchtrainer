@@ -24,7 +24,7 @@ class Trainer:
         train_loader,
         val_loader,
         optimizer_list: List[torch.optim.Optimizer],
-        scheduler: Optional[List[torch.optim.lr_scheduler._LRScheduler]] = None,
+        scheduler_list: Optional[List[torch.optim.lr_scheduler._LRScheduler]] = None,
         keep_n_checkpoints: int = 1,
         checkpoint_interval: int = 10,
         validation_interval: int = 1,
@@ -33,10 +33,6 @@ class Trainer:
         loss_is_normalized: bool = True,
     ):
         """
-        Class to train a model.
-        This contains an internal training loop which takes care of validation and can be
-        extended with custom functionality using hooks.
-
         Args:
             model_path (pathlib.Path): path to the model directory.
             model (nn.Module): model to be trained.
@@ -45,8 +41,8 @@ class Trainer:
             train_loader (torch.utils.data.Dataloader): data loader for training set.
             val_loader (torch.utirls.data.Dataloader): data loader for validation set
             optimizer_list (List[torch.optim.Optimizer]): training optimizer.
-            scheduer (List[torch.optim.lr_schduler._LRScheduler], optional): training LR
-                scheduler. Defaults to None.
+            scheduer_list (List[torch.optim.lr_schduler._LRScheduler], optional):
+                training LR scheduler. Defaults to None.
             keep_n_checkpoints (int, optional): number of saved checkpoints.
                 Defaults to 1.
             checkpoint_interval (int, optional): intervals after which
@@ -71,7 +67,7 @@ class Trainer:
         self.n_epoch = n_epoch
         self.device = device
         self.optimizer_list = optimizer_list
-        self.scheduler = scheduler
+        self.scheduler_list = scheduler_list
         self.keep_n_checkpoints = keep_n_checkpoints
         self.checkpoint_interval = checkpoint_interval
         self.validation_interval = validation_interval
@@ -116,7 +112,7 @@ class Trainer:
             "optimizers": [optimizer.state_dict() for optimizer in self.optimizer_list],
             "schedulers": None
             if self.scheduler is None
-            else [scheduler.state_dict() for scheduler in self.scheduler],
+            else [scheduler.state_dict() for scheduler in self.scheduler_list],
             "hooks": [h.state_dict for h in self.hooks],
         }
         if self._check_is_parallel():
@@ -135,7 +131,7 @@ class Trainer:
         if self.scheduler is None:
             self.scheduler = None
         else:
-            for sche, s in zip(self.scheduler, state_dict["schedulers"]):
+            for sche, s in zip(self.scheduler_list, state_dict["schedulers"]):
                 sche.load_state_dict(s)
         for h, s in zip(self.hooks, state_dict["hooks"]):
             h.state_dict = s
