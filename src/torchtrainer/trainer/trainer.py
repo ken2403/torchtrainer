@@ -1,5 +1,5 @@
 import pathlib
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -17,7 +17,7 @@ class Trainer:
 
     def __init__(
         self,
-        model_path: pathlib.Path,
+        model_path: Union[str, pathlib.Path],
         model: nn.Module,
         n_epoch: int,
         device: torch.device,
@@ -34,7 +34,7 @@ class Trainer:
     ):
         """
         Args:
-            model_path (pathlib.Path): path to the model directory.
+            model_path (str or pathlib.Path): path to the model directory.
             model (nn.Module): model to be trained.
             n_epoch (int): number of training epoch.
             device (torch.device): calculation device.
@@ -57,6 +57,8 @@ class Trainer:
                 Defaults to True.
         """
         # set path
+        if isinstance(model_path, str):
+            model_path = pathlib.Path(model_path)
         self.model_path = model_path
         self.checkpoint_path = self.model_path.joinpath("checkpoints")
         self.best_model = self.model_path.joinpath(f"best_model_{best_label}")
