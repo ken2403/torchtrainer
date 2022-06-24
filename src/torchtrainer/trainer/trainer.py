@@ -111,7 +111,7 @@ class Trainer:
             "best_loss": self.best_loss,
             "optimizers": [optimizer.state_dict() for optimizer in self.optimizer_list],
             "schedulers": None
-            if self.scheduler is None
+            if self.scheduler_list is None
             else [scheduler.state_dict() for scheduler in self.scheduler_list],
             "hooks": [h.state_dict for h in self.hooks],
         }
@@ -128,8 +128,8 @@ class Trainer:
         self.best_loss = state_dict["best_loss"]
         for op, s in zip(self.optimizer_list, state_dict["optimizers"]):
             op.load_state_dict(s)
-        if self.scheduler is None:
-            self.scheduler = None
+        if self.scheduler_list is None:
+            self.scheduler_list = None
         else:
             for sche, s in zip(self.scheduler_list, state_dict["schedulers"]):
                 sche.load_state_dict(s)
@@ -254,8 +254,8 @@ class Trainer:
                     if self._stop:
                         break
 
-                if self.scheduler is not None:
-                    for scheduler in self.scheduler:
+                if self.scheduler_list is not None:
+                    for scheduler in self.scheduler_list:
                         scheduler.step()
 
                 # weighted average over batches
