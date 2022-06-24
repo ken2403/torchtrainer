@@ -10,6 +10,11 @@ __all__ = ["Trainer"]
 
 
 class Trainer:
+    """
+    Class to train a pytorch model. This contains an internal training loop which takes
+    care of validation and can be extended with custom functionality using hooks.
+    """
+
     def __init__(
         self,
         model_path: pathlib.Path,
@@ -19,7 +24,7 @@ class Trainer:
         train_loader,
         val_loader,
         optimizer_list: List[torch.optim.Optimizer],
-        scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
+        scheduler: Optional[List[torch.optim.lr_scheduler._LRScheduler]] = None,
         keep_n_checkpoints: int = 1,
         checkpoint_interval: int = 10,
         validation_interval: int = 1,
@@ -40,7 +45,7 @@ class Trainer:
             train_loader (torch.utils.data.Dataloader): data loader for training set.
             val_loader (torch.utirls.data.Dataloader): data loader for validation set
             optimizer_list (List[torch.optim.Optimizer]): training optimizer.
-            scheduer (torch.optim.lr_schduler._LRScheduler, optional): training LR
+            scheduer (List[torch.optim.lr_schduler._LRScheduler], optional): training LR
                 scheduler. Defaults to None.
             keep_n_checkpoints (int, optional): number of saved checkpoints.
                 Defaults to 1.
@@ -59,7 +64,7 @@ class Trainer:
         self.model_path = model_path
         self.checkpoint_path = self.model_path.joinpath("checkpoints")
         self.best_model = self.model_path.joinpath(f"best_model_{best_label}")
-        # set dataset
+        # set dataloader
         self.train_loader = train_loader
         self.val_loader = val_loader
         # set training settings
@@ -108,8 +113,10 @@ class Trainer:
             "epoch": self.epoch,
             "step": self.step,
             "best_loss": self.best_loss,
-            "optimizers": [optimizer.state_dict for optimizer in self.optimizer_list],
-            "scheduler": None if self.scheduler is None else self.scheduler.state_dict(),
+            "optimizers": [optimizer.state_dict() for optimizer in self.optimizer_list],
+            "schedulers": None
+            if self.scheduler is None
+            else [scheduler.state_dict() for scheduler in self.scheduler],
             "hooks": [h.state_dict for h in self.hooks],
         }
         if self._check_is_parallel():
@@ -124,12 +131,12 @@ class Trainer:
         self.step = state_dict["step"]
         self.best_loss = state_dict["best_loss"]
         for op, s in zip(self.optimizer_list, state_dict["optimizers"]):
-            op.state_dict = s
-        self.scheduler = (
-            None
-            if self.scheduler is None
-            else self.scheduler.load_state_dict(state_dict["scheduler"])
-        )
+            op.load_state_dict(s)
+        if self.scheduler is None:
+            self.scheduler = None
+        else:
+            for sche, s in zip(self.scheduler, state_dict["schedulers"]):
+                sche.load_state_dict(s)
         for h, s in zip(self.hooks, state_dict["hooks"]):
             h.state_dict = s
         self._load_model_state_dict(state_dict["model"])
@@ -252,7 +259,8 @@ class Trainer:
                         break
 
                 if self.scheduler is not None:
-                    self.scheduler.step()
+                    for scheduler in self.scheduler:
+                        scheduler.step()
 
                 # weighted average over batches
                 if self.loss_is_normalized:
