@@ -1,7 +1,7 @@
 import os
 import pathlib
 import time
-from typing import Callable, List, Any
+from typing import Callable, List, Any, Union
 
 import torch
 
@@ -12,19 +12,22 @@ __all__ = ["LoggingHook", "CSVHook"]
 
 
 class LoggingHook(Hook):
+    """
+    Base class for logging hooks.
+    """
+
     def __init__(
         self,
-        log_path: pathlib.Path,
+        log_path: Union[str, pathlib.Path],
         metrics: List[Callable[[Any], List[torch.Tensor]]],
         log_train_loss: bool = True,
         log_validation_loss: bool = True,
         log_learning_rate: bool = True,
     ):
         """
-        Base class for logging hooks.
-
         Args:
-            log_path (pathlib.Path): path to directory in which log files will be stored.
+            log_path (str or pathlib.Path): path to directory in which log files
+                will be stored.
             metrics (List): metrics to log; each metric has to be a function which gets
                 one train_loader and returns list of torch.Tensor.
             log_train_loss (bool, optional): enable logging of training loss.
@@ -34,6 +37,8 @@ class LoggingHook(Hook):
             log_learning_rate (bool, optional): enable logging of current learning rate.
                 Defaults to True.
         """
+        if isinstance(log_path, str):
+            log_path = pathlib.Path(log_path)
         self.log_train_loss = log_train_loss
         self.log_validation_loss = log_validation_loss
         self.log_learning_rate = log_learning_rate
@@ -108,9 +113,13 @@ class LoggingHook(Hook):
 
 
 class CSVHook(LoggingHook):
+    """
+    Hook for logging training process to CSV files.
+    """
+
     def __init__(
         self,
-        log_path: pathlib.Path,
+        log_path: Union[str, pathlib.Path],
         metrics: List[Callable[[Any], torch.Tensor]] = [],
         metrics_names: List[str] = [],
         log_train_loss: bool = True,
@@ -120,10 +129,9 @@ class CSVHook(LoggingHook):
         n_loss: int = 1,
     ):
         """
-        Hook for logging training process to CSV files.
-
         Args:
-            log_path (pathlib.Path): path to directory in which log files will be stored.
+            log_path (str or pathlib.Path): path to directory in which log files
+                will be stored.
             metrics (List, optional): metrics to log; each metric has to be a function
                 which gets one train_loader and returns torch.Tensor.
             metrics_names (List, optional): list of metrics name.
@@ -137,6 +145,8 @@ class CSVHook(LoggingHook):
                 Defaults to 1.
             n_loss (int, optional): number of log loss data. Defaults to 1.
         """
+        if isinstance(log_path, str):
+            log_path = pathlib.Path(log_path)
         log_path = log_path.joinpath("log.csv")
         super().__init__(
             log_path, metrics, log_train_loss, log_validation_loss, log_learning_rate
