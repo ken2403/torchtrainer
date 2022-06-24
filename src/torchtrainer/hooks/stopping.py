@@ -8,14 +8,16 @@ __all__ = ["EarlyStopping", "MaxStepStopping", "NaNStopping"]
 
 
 class EarlyStopping(Hook):
+    """
+    Hook to stop training if validation loss fails to improve.
+    """
+
     def __init__(
         self,
         patience: int,
         threshold_ratio: float = 0.0001,
     ):
         """
-        Hook to stop training if validation loss fails to improve.
-
         Args:
             patience (int): number of epochs which can pass without improvement
                 of validation loss before training ends.
@@ -51,13 +53,15 @@ class EarlyStopping(Hook):
 
 
 class MaxStepStopping(Hook):
+    """
+    Hook to stop training when a maximum number of steps is reached.
+    """
+
     def __init__(
         self,
         max_steps: int,
     ):
         """
-        Hook to stop training when a maximum number of steps is reached.
-
         Args:
             max_steps (int): maximum number of steps.
         """
@@ -72,10 +76,11 @@ class MaxStepStopping(Hook):
 
 
 class NaNStopping(Hook):
+    """
+    Hook to stop training when traing loss is NaN.
+    """
+
     def __init__(self):
-        """
-        Hook to stop training when traing loss is NaN.
-        """
         self.nan_loss_order = None
         self._name = "NaNStopping"
 
