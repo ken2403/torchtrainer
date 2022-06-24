@@ -72,7 +72,7 @@ class MaxStepStopping(Hook):
 
 
 class NaNStopping(Hook):
-    def __init__(self) -> None:
+    def __init__(self):
         """
         Hook to stop training when traing loss is NaN.
         """

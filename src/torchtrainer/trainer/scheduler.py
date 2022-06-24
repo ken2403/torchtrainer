@@ -21,7 +21,7 @@ class WarmupCosineDecayAnnealingLR(_LRScheduler):
         decay_coef: float = 1.5,
         last_epoch: int = -1,
         verbose: bool = False,
-    ) -> None:
+    ):
         """
         Warup at the begining of learning process, and after warming up, LR is
         decaing with cosine function while cosine annealing.

@@ -10,8 +10,10 @@ __all__ = ["Hook"]
 class Hook:
     """
     Base class for hooks.
-    ref:
-    https://github.com/atomistic-machine-learning/schnetpack/blob/master/src/schnetpack/train/hooks/base_hook.py
+
+    Notes:
+        referrence:
+        https://github.com/atomistic-machine-learning/schnetpack/blob/master/src/schnetpack/train/hooks/base_hook.py
     """
 
     @property
