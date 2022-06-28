@@ -62,7 +62,7 @@ class Trainer:
         self.model_path = model_path
         self.checkpoint_path = self.model_path.joinpath("checkpoints")
         if best_label is None:
-            self.best_model = self.model_path.joinpath(f"best_model")
+            self.best_model = self.model_path.joinpath("best_model")
         else:
             self.best_model = self.model_path.joinpath(f"best_model_{best_label}")
         # set dataloader
