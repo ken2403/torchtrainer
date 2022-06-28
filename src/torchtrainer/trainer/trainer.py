@@ -29,7 +29,7 @@ class Trainer:
         checkpoint_interval: int = 10,
         validation_interval: int = 1,
         hooks: List = [],
-        best_label: str = "",
+        best_label: Optional[str] = None,
         loss_is_normalized: bool = True,
     ):
         """
@@ -51,7 +51,7 @@ class Trainer:
                 calculation is saved. Defaults to 1.
             hooks (List[Hook], optional): hooks to customize training process.
                 Defaults to [].
-            best_labl (str, optional): best model's name label. Defaults to "".
+            best_label (str, optional): best model's name label. Defaults to `None`.
             loss_is_normalized (bool, optional): if True, the loss per data point
                 will be reported. Otherwise, the accumulated loss is reported.
                 Defaults to True.
@@ -61,7 +61,10 @@ class Trainer:
             model_path = pathlib.Path(model_path)
         self.model_path = model_path
         self.checkpoint_path = self.model_path.joinpath("checkpoints")
-        self.best_model = self.model_path.joinpath(f"best_model_{best_label}")
+        if best_label is None:
+            self.best_model = self.model_path.joinpath(f"best_model")
+        else:
+            self.best_model = self.model_path.joinpath(f"best_model_{best_label}")
         # set dataloader
         self.train_loader = train_loader
         self.val_loader = val_loader
