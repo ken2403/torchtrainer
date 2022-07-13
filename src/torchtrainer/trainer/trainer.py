@@ -31,6 +31,7 @@ class Trainer:
         hooks: List = [],
         best_label: Optional[str] = None,
         loss_is_normalized: bool = True,
+        save_best_model: bool = True,
     ):
         """
         Args:
@@ -55,6 +56,8 @@ class Trainer:
             loss_is_normalized (bool, optional): if True, the loss per data point
                 will be reported. Otherwise, the accumulated loss is reported.
                 Defaults to True.
+            save_best_model: bool: if `True`, the best model will be saved.
+                Defaults to True.
         """
         # set path
         if isinstance(model_path, str):
@@ -78,6 +81,7 @@ class Trainer:
         self.validation_interval = validation_interval
         self.hooks = hooks
         self.loss_is_normalized = loss_is_normalized
+        self.save_best_model = save_best_model
         # private attribute
         self._model = model
         self._stop = False
@@ -327,9 +331,13 @@ class Trainer:
 
                     if self.best_loss > mean_val_loss:
                         self.best_loss = mean_val_loss
-                        torch.save(self._model, self.best_model)
-                        if verbose:
-                            print(f"model is saved in epoch {epoch+1}")
+                        if self.save_best_model:
+                            torch.save(self._model, self.best_model)
+                            if verbose:
+                                print(f"model is saved in epoch {epoch+1}")
+                        else:
+                            if verbose:
+                                print(f"reach best loss in epoch {epoch+1}")
 
                     for h in self.hooks:
                         h.on_validation_end(self, mean_val_loss)
