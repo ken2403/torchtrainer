@@ -337,7 +337,6 @@ class Trainer:
 
                 if verbose:
                     print("-" * 50)
-                    print("")
 
                 if self._stop:
                     break
