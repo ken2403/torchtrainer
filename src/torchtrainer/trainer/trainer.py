@@ -196,6 +196,8 @@ class Trainer:
         Note:
             Depending on the `hooks`, training can stop earlier than `n_epoch`.
         """
+        if verbose:
+            message_bar_len = 40
         if val_step is None:
             val_step = train_step
 
@@ -336,7 +338,7 @@ class Trainer:
                     h.on_epoch_end(self)
 
                 if verbose:
-                    print("-" * 50)
+                    print("-" * message_bar_len)
 
                 if self._stop:
                     break
@@ -345,13 +347,15 @@ class Trainer:
                 h.on_train_ends(self)
 
             if verbose:
-                print("-" * 50)
+                print("")
+                print("-" * message_bar_len)
                 if self._stop:
                     print(f"Training is stopped by {self._stop_by}.")
-                    print(f"Training stopped with epoch {epoch+1}")
+                    print(f"Training stopped with epoch {epoch+1}.")
                 else:
-                    print(f"Training completed with epoch {epoch+1}")
-                print("-" * 50)
+                    print(f"Training completed with epoch {epoch+1}.")
+                print("-" * message_bar_len)
+                print("")
 
             # store checkpoints
             self.store_checkpoint()
