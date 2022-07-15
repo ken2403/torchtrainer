@@ -1,6 +1,7 @@
 import pathlib
 from typing import Any, Callable, List, Optional, Tuple, Union
 
+import dill
 import numpy as np
 import torch
 import torch.nn as nn
@@ -332,7 +333,8 @@ class Trainer:
                     if self.best_loss > mean_val_loss:
                         self.best_loss = mean_val_loss
                         if self.save_best_model:
-                            torch.save(self._model, self.best_model)
+                            # modidfy module for model that cannot be saved by pickle
+                            torch.save(self._model, self.best_model, pickle_module=dill)
                             if verbose:
                                 print(f"model is saved in epoch {epoch+1}")
                         else:
