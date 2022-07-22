@@ -18,7 +18,7 @@ class Trainer:
 
     def __init__(
         self,
-        model_path: Union[str, pathlib.Path],
+        save_path: Union[str, pathlib.Path],
         model: nn.Module,
         n_epoch: int,
         device: torch.device,
@@ -36,7 +36,7 @@ class Trainer:
     ):
         """
         Args:
-            model_path (str or pathlib.Path): save path of best model and checkpoints.
+            save_path (str or pathlib.Path): save path of best model and checkpoints.
             model (nn.Module): model to be trained.
             n_epoch (int): number of training epoch.
             device (torch.device): calculation device.
@@ -62,15 +62,15 @@ class Trainer:
                 Defaults to True.
         """
         # set path
-        if isinstance(model_path, str):
-            model_path = pathlib.Path(model_path)
-        self.model_path = model_path
+        if isinstance(save_path, str):
+            save_path = pathlib.Path(save_path)
+        self.save_path = save_path
         if keep_n_checkpoints is not None:
-            self.checkpoint_path = self.model_path.joinpath("checkpoints")
+            self.checkpoint_path = self.save_path.joinpath("checkpoints")
         if best_label is None:
-            self.best_model = self.model_path.joinpath("best_model")
+            self.best_model = self.save_path.joinpath("best_model")
         else:
-            self.best_model = self.model_path.joinpath(f"best_model_{best_label}")
+            self.best_model = self.save_path.joinpath(f"best_model_{best_label}")
         # set dataloader
         self.train_loader = train_loader
         self.val_loader = val_loader
