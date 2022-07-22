@@ -36,7 +36,7 @@ class Trainer:
     ):
         """
         Args:
-            model_path (str or pathlib.Path): path to the model directory.
+            model_path (str or pathlib.Path): save path of best model and statedict checkpoints.
             model (nn.Module): model to be trained.
             n_epoch (int): number of training epoch.
             device (torch.device): calculation device.
