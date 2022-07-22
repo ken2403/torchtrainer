@@ -26,8 +26,8 @@ class Trainer:
         val_loader,
         optimizer_list: List[torch.optim.Optimizer],
         scheduler_list: Optional[List[torch.optim.lr_scheduler._LRScheduler]] = None,
-        keep_n_checkpoints: int = 1,
-        checkpoint_interval: int = 10,
+        keep_n_checkpoints: Optional[int] = 1,
+        checkpoint_interval: int = 1,
         validation_interval: int = 1,
         hooks: List = [],
         best_label: Optional[str] = None,
@@ -45,10 +45,11 @@ class Trainer:
             optimizer_list (List[torch.optim.Optimizer]): training optimizer.
             scheduer_list (List[torch.optim.lr_schduler._LRScheduler], optional):
                 training LR scheduler. Defaults to None.
-            keep_n_checkpoints (int, optional): number of saved checkpoints.
+            keep_n_checkpoints (int or None, optional): number of saved checkpoints.
+                If set to None, trainer does not save any statedict checkpoints.
                 Defaults to 1.
             checkpoint_interval (int, optional): intervals after which
-                checkpoints is saved. Defaults to 10.
+                checkpoints is saved. Defaults to 1.
             validation_interval (int, optional):  intervals after which validation
                 calculation is saved. Defaults to 1.
             hooks (List[Hook], optional): hooks to customize training process.
@@ -64,7 +65,8 @@ class Trainer:
         if isinstance(model_path, str):
             model_path = pathlib.Path(model_path)
         self.model_path = model_path
-        self.checkpoint_path = self.model_path.joinpath("checkpoints")
+        if keep_n_checkpoints is not None:
+            self.checkpoint_path = self.model_path.joinpath("checkpoints")
         if best_label is None:
             self.best_model = self.model_path.joinpath("best_model")
         else:
@@ -88,14 +90,19 @@ class Trainer:
         self._stop = False
         self._stop_by = None
         # get newest checkpoint
-        if self.checkpoint_path.exists():
-            self.restore_checkpoint()
+        if keep_n_checkpoints is not None:
+            if self.checkpoint_path.exists():
+                self.restore_checkpoint()
+            else:
+                self.checkpoint_path.mkdir()
+                self.epoch = 0
+                self.step = 0
+                self.best_loss = float("inf")
+                self.store_checkpoint()
         else:
-            self.checkpoint_path.mkdir()
             self.epoch = 0
             self.step = 0
             self.best_loss = float("inf")
-            self.store_checkpoint()
 
     def _check_is_parallel(self):
         return True if isinstance(self._model, torch.nn.DataParallel) else False
@@ -275,7 +282,10 @@ class Trainer:
                     for i, _ in enumerate(train_loss_sum_list):
                         train_loss_sum_list[i] /= n_train
 
-                if self.epoch % self.checkpoint_interval == 0:
+                if (
+                    self.epoch % self.checkpoint_interval == 0
+                    and self.keep_n_checkpoints is not None
+                ):
                     self.store_checkpoint()
 
                 if verbose:
@@ -368,7 +378,8 @@ class Trainer:
                 print("")
 
             # store checkpoints
-            self.store_checkpoint()
+            if self.keep_n_checkpoints is not None:
+                self.store_checkpoint()
 
         except Exception as e:
             for h in self.hooks:
